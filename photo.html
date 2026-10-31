@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JekBooth</title>
+<style>
+  #plist{max-height:50vh;overflow-y:auto;padding:0}
+  #ig{bottom:calc(20px + env(safe-area-inset-bottom))}
+  #vid{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+:root{--p1:#ff6fb5;--p2:#9b6bff;--b1:#1a1033;--b2:#3b1a5c;--b3:#5c1a4a;--card:rgba(255,255,255,.1)}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+body{font-family:'Segoe UI',system-ui,sans-serif;color:#fff;min-height:100vh;padding-bottom:80px;overflow-x:hidden;
+background:linear-gradient(135deg,var(--b1),var(--b2) 50%,var(--b3)) fixed;transition:background .6s}
+main,nav,footer{position:relative;z-index:1}
+nav{position:sticky;top:0;z-index:50;display:flex;gap:6px;overflow-x:auto;padding:10px;background:rgba(20,10,40,.85);backdrop-filter:blur(10px)}
+nav a,nav button{flex:none;color:#fff;text-decoration:none;padding:8px 14px;border-radius:99px;font-weight:600;background:none;border:0;cursor:pointer;font-size:1rem;font-family:inherit}
+nav a.on{background:linear-gradient(90deg,var(--p1),var(--p2))}
+.page{display:none;max-width:960px;margin:auto;padding:20px 14px}
+.page.active{display:block;animation:fade .5s}
+@keyframes fade{from{opacity:0;transform:translateY(15px)}}
+h1{font-size:2.4rem;background:linear-gradient(90deg,#fff,var(--p1),var(--p2));-webkit-background-clip:text;color:transparent}
+h2{margin-bottom:12px}h3{margin-bottom:6px}
+p{line-height:1.6;margin:8px 0}
+.card{background:var(--card);border:1px solid rgba(255,255,255,.2);border-radius:18px;padding:16px;margin:12px 0;backdrop-filter:blur(8px)}
+.rev{opacity:0;transform:translateY(20px);transition:.6s}.rev.show{opacity:1;transform:none}
+.btn{border:0;cursor:pointer;color:#fff;font-weight:700;padding:12px 22px;border-radius:99px;font-size:1rem;margin:3px;
+background:linear-gradient(90deg,var(--p1),var(--p2));box-shadow:0 6px 20px rgba(255,111,181,.35);transition:.2s;text-decoration:none;display:inline-block;font-family:inherit}
+.btn:hover{transform:scale(1.05)}.btn:disabled{opacity:.4}
+.btn.sm{padding:6px 12px;font-size:.85rem}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px}
+.chip{flex:none;padding:8px 14px;border-radius:99px;background:var(--card);border:1px solid rgba(255,255,255,.25);color:#fff;cursor:pointer;font-size:.95rem;font-family:inherit}
+.chip.on{background:linear-gradient(90deg,var(--p1),var(--p2));border-color:transparent}
+.chip.em{font-size:1.5rem;padding:4px 10px}
+label{font-weight:600;display:block;margin-top:10px}
+select,input[type=text],textarea{width:100%;padding:10px;border-radius:12px;border:0;margin-top:6px;font-size:1rem;font-family:inherit}
+input[type=range]{width:100%}
+input[type=color]{width:60px;height:36px;border:0;border-radius:8px;vertical-align:middle}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.stagebox{position:relative;max-width:640px;margin:auto;background:#000;border-radius:18px}
+#stage{width:100%;border-radius:18px;touch-action:none;border:3px solid #fff;display:block}
+#count{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:7rem;font-weight:800;text-shadow:0 0 30px var(--p1);pointer-events:none}
+#camMsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px}
+.flash{position:fixed;inset:0;background:#fff;z-index:300;pointer-events:none;animation:fl .4s forwards}
+@keyframes fl{to{opacity:0}}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.grid canvas,.grid img{width:100%;border-radius:12px;cursor:pointer;background:#0003}
+.item{background:var(--card);padding:8px;border-radius:14px;text-align:center}
+.feat{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.feat .card{margin:0;text-align:center}.feat .card span{font-size:2.2rem;display:block}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
+.stats b{display:block;font-size:1.8rem;color:var(--p1)}
+#modal,#lightbox{position:fixed;inset:0;background:rgba(10,5,25,.93);z-index:150;overflow:auto;padding:16px;text-align:center}
+#result canvas,#lightbox img{max-width:100%;max-height:68vh;border-radius:12px;box-shadow:0 10px 40px #000a}
+#player{position:fixed;bottom:0;left:0;right:0;z-index:100;display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(20,10,40,.93);backdrop-filter:blur(10px)}
+#player button{background:none;border:0;color:#fff;font-size:1.4rem;cursor:pointer}
+#songName{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:.9rem}
+#player input[type=range]{width:70px}
+#wa{position:fixed;right:14px;bottom:80px;z-index:100;width:56px;height:56px;border-radius:50%;background:#25d366;display:flex;align-items:center;justify-content:center;font-size:1.8rem;text-decoration:none;box-shadow:0 6px 20px #0008;animation:pulse 2s infinite}
+@keyframes pulse{50%{transform:scale(1.12)}}
+.float{position:fixed;bottom:-50px;z-index:0;opacity:.45;pointer-events:none;animation:up linear infinite}
+.nofx .float{display:none}
+@keyframes up{to{transform:translateY(-115vh) rotate(360deg)}}
+.spark{position:fixed;z-index:400;pointer-events:none;animation:sp .9s forwards}
+@keyframes sp{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+.conf{position:fixed;top:-40px;z-index:500;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#fff;color:#333;padding:10px 18px;border-radius:99px;z-index:600;font-weight:600}
+#splash{position:fixed;inset:0;z-index:999;background:var(--b1);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s}
+#splash .big{font-size:5rem;animation:pulse 1s infinite}
+.hero{text-align:center;padding:30px 0}
+.hero .big{font-size:4.5rem;animation:bob 2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-12px) rotate(5deg)}}
+.song{display:flex;gap:12px;padding:10px;border-radius:12px;cursor:pointer;list-style:none}
+.song.on{background:linear-gradient(90deg,var(--p1),var(--p2))}
+#eq{display:flex;gap:4px;height:40px;align-items:flex-end;justify-content:center}
+#eq i{width:8px;background:var(--p1);height:6px;border-radius:3px}
+#eq.play i{animation:eq .6s ease-in-out infinite alternate}
+#eq i:nth-child(2){animation-delay:.1s}#eq i:nth-child(3){animation-delay:.2s}#eq i:nth-child(4){animation-delay:.3s}#eq i:nth-child(5){animation-delay:.15s}
+@keyframes eq{to{height:40px}}
+#pose{font-size:1.6rem;text-align:center;padding:30px 10px}
+#pose span{display:block;font-size:4rem}
+details{background:var(--card);border-radius:14px;padding:14px;margin:8px 0}
+summary{cursor:pointer;font-weight:700}
+#testi{text-align:center;font-style:italic;min-height:70px;transition:opacity .5s}
+#preview canvas{max-height:320px;max-width:100%;width:auto;border-radius:8px}
+footer{text-align:center;padding:20px;opacity:.7;font-size:.9rem}
+@media(max-width:560px){.stats{grid-template-columns:repeat(2,1fr)}}
+  body{color:#3a2150}
+h1{background:linear-gradient(90deg,var(--p1),var(--p2));-webkit-background-clip:text;color:transparent}
+:root{--card:rgba(255,255,255,.75)}
+nav,#player{background:rgba(255,255,255,.92)}
+nav a,nav button,#player button{color:#3a2150}
+nav a.on{color:#fff}
+.chip{color:#3a2150;border-color:rgba(0,0,0,.15)}
+.chip.on,.song.on{color:#fff}
+.card,.item,details{box-shadow:0 4px 14px rgba(0,0,0,.08)}
+#modal,#lightbox{color:#fff}
+.float{opacity:.7}
+  #framePicker{display:flex;gap:12px;overflow-x:auto;padding:12px 6px 16px;scroll-snap-type:x mandatory;position:relative}
+.fcard{flex:none;width:118px;padding:10px 8px;border-radius:16px;background:var(--card);border:2px solid transparent;text-align:center;cursor:pointer;scroll-snap-align:center;transition:.25s;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative}
+.fcard canvas{width:100%;height:auto;border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,.3)}
+.fcard b{font-size:.85rem}
+.fcard small{opacity:.7}
+.fcard:hover{transform:translateY(-4px)}
+.fcard.sel{border-color:var(--p1);transform:scale(1.06);box-shadow:0 0 0 3px rgba(255,255,255,.25),0 8px 24px var(--p1)}
+.fcard.sel::after{content:'✔';position:absolute;top:-8px;right:-8px;width:26px;height:26px;border-radius:50%;background:var(--p1);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.85rem}
+  html,body{max-width:100%;overflow-x:hidden;overscroll-behavior-x:none}
+#fxLayer,#topLayer{position:fixed;inset:0;overflow:hidden;pointer-events:none}
+#fxLayer{z-index:0}
+#topLayer{z-index:400}
+.float{position:absolute}
+.spark,.conf{position:absolute}
+  #splash{text-align:center;padding:0 16px}
+#splash h1,.hero h1{width:100%;text-align:center}
+h1{font-size:clamp(1.8rem,9vw,2.6rem);line-height:1.2}
+  .hero{position:relative;overflow:hidden;border-radius:24px;min-height:540px;display:flex;align-items:flex-end;justify-content:center;text-align:center;padding:0;margin:10px 0;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.heroPhoto{position:absolute;inset:0;background:linear-gradient(135deg,var(--p1),var(--p2)) center 25%/cover no-repeat}
+.hero::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.78) 0%,rgba(0,0,0,.3) 45%,transparent 75%)}
+.heroBody{position:relative;z-index:2;width:100%;padding:24px 16px 28px}
+.hero h1{background:none;-webkit-text-fill-color:#fff;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.hero p{color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+  /* Hero: foto full tanpa frame + gradasi memudar di bawah */
+.hero{position:relative;width:100vw;margin:-20px 0 10px calc(50% - 50vw);padding:0;min-height:0;display:block;
+border-radius:0;box-shadow:none;overflow:visible;text-align:center}
+.hero::after{display:none}
+.heroPhoto{position:relative;inset:auto;width:100%;height:min(78vh,640px);
+background:linear-gradient(135deg,var(--p1),var(--p2)) center 20%/cover no-repeat;
+-webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 55%,transparent 100%);
+mask-image:linear-gradient(to bottom,#000 0%,#000 55%,transparent 100%)}
+.heroBody{position:relative;z-index:2;margin-top:-150px;padding:0 16px 10px}
+.hero h1{background:none;color:#3a2150;-webkit-text-fill-color:#3a2150;text-shadow:0 2px 14px var(--b1)}
+.hero p{color:#3a2150;text-shadow:0 1px 10px var(--b1)}
+  /* Bar menu transparan */
+nav{position:fixed;top:0;left:0;right:0;background:transparent!important;backdrop-filter:none;-webkit-backdrop-filter:none;
+box-shadow:none;padding:calc(10px + env(safe-area-inset-top,0px)) 10px 10px;transition:background .3s}
+nav a,nav button{background:rgba(255,255,255,.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#3a2150}
+nav a.on{background:linear-gradient(90deg,var(--p1),var(--p2));color:#fff}
+.page{padding-top:calc(80px + env(safe-area-inset-top,0px))}
+.hero{margin-top:calc(-80px - env(safe-area-inset-top,0px))}
+nav.solid{background:rgba(255,255,255,.85)!important;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+</style>
+</head>
+<body>
+
+<div id="splash"><div class="big">📸</div><h1>JekPraw Photobooth</h1><p>Memuat Keseruan…</p></div>
+
+<nav>
+  <a href="#beranda">🏠 Beranda</a>
+  <a href="#fotobooth">📸 Photobooth</a>
+  <a href="#frame">🖼️ Frame</a>
+  <a href="#galeri">💾 Galeri</a>
+  <a href="#musik">🎵 Musik</a>
+  <a href="#pose">🎲 Ide Pose</a>
+  <a href="#tips">💡 Tips</a>
+  <a href="#faq">❓ FAQ</a>
+  <a href="#tentang">ℹ️ Tentang</a>
+  <a href="#kontak">💬 Kontak</a>
+  <button id="btnTheme">🎨 Tema</button>
+  <button id="btnFx">✨ Efek</button>
+</nav>
+
+<main>
+<!-- BERANDA -->
+<section class="page" id="beranda">
+  <div class="hero" id="hero">
+  <div class="heroPhoto" id="heroPhoto"></div>
+  <div class="heroBody">
+    <h1>JekPraw Photobooth</h1>
+    <p>Foto seru dengan 38 frame, 20 filter, filter wajah, stiker emoji & musik favoritmu!</p>
+    <a class="btn" href="#fotobooth">Mulai Foto </a>
+    <a class="btn" href="#frame">Lihat Frame </a>
+  </div>
+</div>
+  <div class="card rev stats">
+    <div><b id="sTotal">0</b>Foto diambil</div>
+    <div><b id="sGal">0</b>Di galeri</div>
+    <div><b id="sFrame">0</b>Frame</div>
+    <div><b id="sFilter">0</b>Filter</div>
+  </div>
+  <h2>Fitur Unggulan</h2>
+  <div class="feat">
+    <div class="card rev"><span>🖼️</span><h3>38 Frame</h3><p>Tema lucu, alam, gelap, klasik & perayaan</p></div>
+    <div class="card rev"><span>🔢</span><h3>Grid 2–8 Foto</h3><p>Pilih jumlah foto sesukamu</p></div>
+    <div class="card rev"><span>🎨</span><h3>20 Filter</h3><p>Plus slider terang, kontras & warna</p></div>
+    <div class="card rev"><span>😎</span><h3>Filter Wajah</h3><p>Mahkota, kacamata, kucing & lainnya</p></div>
+    <div class="card rev"><span>😍</span><h3>Stiker Emoji</h3><p>100+ emoji & stiker teks</p></div>
+    <div class="card rev"><span>🌈</span><h3>Warna Kustom</h3><p>Ubah warna frame sesukamu</p></div>
+    <div class="card rev"><span>🎵</span><h3>Pemutar Musik</h3><p>Lagu pilihanmu sendiri</p></div>
+    <div class="card rev"><span>💾</span><h3>Galeri</h3><p>Simpan, unduh & bagikan</p></div>
+  </div>
+  <div class="card rev"><h3>💬 Gimana Pengalaman Lo? </h3>Jangan lupa di kasih rating yaa<div id="testi"></div></div>
+</section>
+
+<!-- FOTOBOOTH -->
+<section class="page" id="fotobooth">
+  <h2> JekPraw Photobooth </h2>
+  <div class="stagebox" id="sbox">
+    <video id="vid" playsinline muted autoplay></video>
+    <canvas id="stage" width="640" height="480"></canvas>
+    <div id="count" hidden></div>
+    <div id="camMsg">Tekan “Nyalakan Kamera” untuk mulai 📷</div>
+  </div>
+  <p style="text-align:center" id="prog">&nbsp;</p>
+  <div style="text-align:center">
+    <button class="btn" id="btnCam">📷 Nyalakan Kamera</button>
+    <button class="btn" id="btnShoot" disabled>🔴 Mulai Foto</button>
+    <button class="btn sm" id="btnSwitch">🔄 Ganti Kamera</button>
+    <button class="btn sm" id="btnFull">⛶ Layar Penuh</button>
+  </div>
+
+  <div class="chips" id="tabs" style="margin-top:14px">
+    <button class="chip on" data-t="tFrame">🖼️ Frame</button>
+    <button class="chip" data-t="tFilter">🎨 Filter</button>
+    <button class="chip" data-t="tFace">😎 Wajah</button>
+    <button class="chip" data-t="tEmoji">😍 Emoji</button>
+    <button class="chip" data-t="tSet">⚙️ Atur</button>
+  </div>
+
+  <div class="card tabpane" id="tFrame">
+    <label>Jumlah foto (grid)</label><div class="chips" id="cGrid"></div>
+    <label>Frame</label>
+<div class="chips" id="cPickCat"></div>
+<div id="framePicker"></div>
+<p style="text-align:center">Dipilih: <b id="frameName"></b></p>
+    <label><input type="checkbox" id="chkCustom"> Pakai warna kustom</label>
+    <div class="row"><input type="color" id="col1" value="#ff9ad5"><input type="color" id="col2" value="#ffd1ec"></div>
+    <label>Tulisan di frame</label><input type="text" id="caption" maxlength="30" placeholder="Contoh: JekPraw 💖">
+    <label><input type="checkbox" id="chkDate" checked> Tampilkan tanggal</label>
+    <label>Preview layout</label><div id="preview"></div>
+  </div>
+
+  <div class="card tabpane" id="tFilter" hidden>
+    <label>Filter foto</label><div class="chips" id="cFilter"></div>
+    <label>Kecerahan <span id="vBr">100</span>%</label><input type="range" id="rBr" min="50" max="150" value="100">
+    <label>Kontras <span id="vCt">100</span>%</label><input type="range" id="rCt" min="50" max="150" value="100">
+    <label>Warna <span id="vSat">100</span>%</label><input type="range" id="rSat" min="0" max="200" value="100">
+    <button class="chip" id="btnResetAdj">↩️ Reset</button>
+  </div>
+
+  <div class="card tabpane" id="tFace" hidden>
+    <label>Filter wajah</label><div class="chips" id="cFace"></div>
+    <p><small>Wajah terdeteksi otomatis. Kalau gagal, emoji ditaruh di tengah layar.</small></p>
+  </div>
+
+  <div class="card tabpane" id="tEmoji" hidden>
+    <label>Kategori</label><div class="chips" id="cEmoCat"></div>
+    <div class="chips" id="cEmoji"></div>
+    <small>Ketuk layar kamera untuk menaruh stiker, geser untuk memindah.</small>
+    <label>Ukuran stiker <span id="vSize">70</span></label><input type="range" id="rSize" min="30" max="160" value="70">
+    <label>Stiker teks</label>
+    <div class="row"><input type="text" id="txtSticker" maxlength="15" placeholder="Tulis teks..." style="flex:1"><button class="btn sm" id="btnTxt">➕ Tambah</button></div>
+    <p><button class="chip" id="btnUndo">↩️ Hapus stiker terakhir</button> <button class="chip" id="btnClear">🗑️ Hapus semua</button></p>
+  </div>
+
+  <div class="card tabpane" id="tSet" hidden>
+    <label>Hitung mundur</label>
+    <select id="selTimer"><option value="3">3 detik</option><option value="5">5 detik</option><option value="2">2 detik</option><option value="1">1 detik</option></select>
+    <label><input type="checkbox" id="chkMirror" checked> Cermin (mirror) kamera depan</label>
+    <label><input type="checkbox" id="chkSound" checked> Suara shutter & hitung mundur</label>
+    <label><input type="checkbox" id="chkAuto"> Simpan otomatis ke galeri</label>
+  </div>
+</section>
+
+<!-- FRAME -->
+<section class="page" id="frame">
+  <h2>🖼️ Katalog Frame (<span id="fCount"></span>)</h2>
+  <div class="chips" id="cFrameCat"></div>
+  <div class="grid" id="frameList"></div>
+</section>
+
+<!-- GALERI -->
+<section class="page" id="galeri">
+  <h2>💾 Galeri (<span id="gCount">0</span>)</h2>
+  <p><button class="btn sm" id="btnDlAll">⬇️ Unduh Semua</button><button class="btn sm" id="btnDelAll">🗑️ Hapus Semua</button></p>
+  <p id="emptyGal">Belum ada foto tersimpan.</p>
+  <div class="grid" id="galList"></div>
+</section>
+
+<!-- MUSIK -->
+<section class="page" id="musik">
+  <h2>🎵 Pemutar Musik</h2>
+  <div class="card">
+    <div id="eq"><i></i><i></i><i></i><i></i><i></i></div>
+    <h3 id="nowTitle" style="text-align:center;margin-top:8px">-</h3>
+    <input type="range" id="seek" min="0" max="100" value="0">
+    <p style="text-align:center"><span id="tCur">0:00</span> / <span id="tDur">0:00</span></p>
+    <p style="text-align:center">
+      <button class="btn sm" id="mPrev">⏮</button><button class="btn" id="mPlay">▶️</button><button class="btn sm" id="mNext">⏭</button>
+      <button class="chip" id="mShuf">🔀 Acak</button><button class="chip" id="mLoop">🔂 Ulang 1 lagu</button>
+    </p>
+  </div>
+  <h3>Playlist</h3>
+  <div class="card"><ul id="plist"></ul></div>
+</section>
+
+<!-- IDE POSE -->
+<section class="page" id="pose">
+  <h2>🎲 Ide Pose</h2>
+  <div class="card"><div id="pose"><span>🤔</span>Tekan tombol untuk dapat ide pose!</div>
+    <p style="text-align:center"><button class="btn" id="btnPose">🎲 Acak Pose</button><a class="btn" href="#fotobooth">📸 Ke Photobooth</a></p></div>
+  <h3>Tantangan 5 Pose</h3>
+  <div class="card"><ol id="challenge" style="padding-left:20px;line-height:2"></ol>
+    <p><button class="btn sm" id="btnChal">🔥 Buat Tantangan</button></p></div>
+</section>
+
+<!-- TIPS -->
+<section class="page" id="tips">
+  <h2>💡 Tips Foto Bagus</h2>
+  <div class="feat">
+    <div class="card rev"><span>☀️</span><h3>Cahaya</h3><p>Menghadaplah ke sumber cahaya, hindari cahaya dari belakang.</p></div>
+    <div class="card rev"><span>📏</span><h3>Jarak</h3><p>Atur jarak agar wajah dan bahu pas di layar.</p></div>
+    <div class="card rev"><span>😄</span><h3>Ekspresi</h3><p>Tersenyum natural, ganti ekspresi di tiap foto.</p></div>
+    <div class="card rev"><span>👥</span><h3>Bersama Teman</h3><p>Berdekatan supaya semua muat di layar.</p></div>
+    <div class="card rev"><span>🎨</span><h3>Padukan Warna</h3><p>Pilih frame yang senada dengan bajumu.</p></div>
+    <div class="card rev"><span>🧼</span><h3>Lensa Bersih</h3><p>Lap lensa kamera agar hasil tidak buram.</p></div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="page" id="faq">
+  <h2>❓ Pertanyaan Umum</h2>
+  <details><summary>Kamera tidak mau menyala?</summary><p>Izinkan akses kamera di browser dan buka website lewat https:// atau localhost.</p></details>
+  <details><summary>Apakah foto saya dikirim ke server?</summary><p>Tidak. Semua foto diproses dan disimpan di perangkatmu sendiri, dan Admin tidak akan bisa melihat hasil foto kamu, foto kamu langsung tersimpan diperangkatmu sendiri.</p></details>
+  <details><summary>Bagaimana menyimpan foto ke galeri HP?</summary><p>Setelah foto jadi, tekan “Bagikan / Simpan ke HP” atau “Unduh”.</p></details>
+  <details><summary>Kenapa filter wajah kadang meleset?</summary><p>Pastikan wajah menghadap kamera dan cahaya cukup terang.</p></details>
+  <details><summary>Foto di galeri hilang?</summary><p>Galeri tersimpan di browser. Menghapus data browser akan menghapusnya, jadi unduh foto penting.</p></details>
+</section>
+
+<!-- TENTANG -->
+<section class="page" id="tentang">
+  <h2>ℹ️ Tentang</h2>
+  <div class="card"><p>JekPraw Photobooth adalah website Photobooth sederhana online gratis untuk semua Platform.</p>
+    <p>Gue JekPraw, Selaku pembuat website sederhana ini, Thanks buat lo semua yang udah mampir untuk sekedar melihat dan mencoba karya gue, Sorry jga klo msih bnyak lo pada nemuin kesalahan, Dimana gue juga masih belajar akan Web Developer, THANKS FOR YOUR VISITED</p></div>
+</section>
+
+<!-- KONTAK -->
+<section class="page" id="kontak">
+  <h2>💬 Contact Me</h2>
+  <div class="card">
+    <label>Nama</label><input type="text" id="wName" placeholder="Nama kamu">
+    <label>Keperluan</label>
+    <select id="wTopic"><option>Tanya-tanya</option><option>Booking acara</option><option>Saran & masukan</option><option>Laporan masalah</option></select>
+    <label>Penilaian</label>
+    <select id="wRate"><option>⭐⭐⭐⭐⭐</option><option>⭐⭐⭐⭐</option><option>⭐⭐⭐</option><option>⭐⭐</option><option>⭐</option></select>
+    <label>Pesan</label><textarea id="wMsg" rows="4" placeholder="Tulis pesan..."></textarea>
+    <p><button class="btn" id="btnWA">Kirim via WhatsApp 💚</button></p>
+  </div>
+</section>
+</main>
+
+<footer>Dibuat dengan 💖 • JekPraw Photobooth</footer>
+
+<div id="modal" hidden>
+  <h2>Hasil Fotomu 🎉</h2>
+  <div id="result"></div>
+  <p style="margin-top:14px">
+    <button class="btn" id="btnSave">💾 Simpan ke Galeri</button>
+    <button class="btn" id="btnDl">⬇️ Simpan ke HP (For Android)</button>
+    <button class="btn" id="btnShare">⬇️ Simpan ke HP (For iPhone)</button>
+    <button class="btn" id="btnClose">🔁 Foto Lagi</button>
+  </p>
+</div>
+<div id="lightbox" hidden><img id="lbImg"><p><button class="btn" id="lbClose">✖ Tutup</button></p></div>
+
+<a id="wa" href="#" target="_blank" title="Chat WhatsApp">💬</a>
+
+<div id="player">
+  <button id="pPrev">⏮</button><button id="pPlay">▶️</button><button id="pNext">⏭</button>
+  <span id="songName">🎵 -</span>
+  <input type="range" id="vol" min="0" max="1" step=".05" value=".6">
+</div>
+
+<script>
+/* ================== PENGATURAN (EDIT DI SINI) ================== */
+const NOMOR_WA = '6282177523990';           // nomor WhatsApp (awali 62, tanpa +)
+const FOTO_SAYA = 'jekbooth.jpg';          // foto bawaan di Beranda
+const LAGU = [                               // taruh file lagu di folder "musik"
+  {judul:'Shape Of My Heart', file:'lagu1.mp3'},
+  {judul:'Merry Christmas, Please dont call', file:'lagu2.mp3'},
+  {judul:'Teruntuk Mia', file:'lagu3.mp3'},
+  {judul:'Dinda', file:'lagu4.mp3'},
+  {judul:'My Mine Gueh', file:'lagu5.mp3'},
+  {judul:'Sesi Potret', file:'lagu6.mp3'},
+  {judul:'The one that Got Away', file:'lagu7.mp3'},
+  {judul:'Negoro Angin', file:'lagu8.mp3'},
+  {judul:'Ternyata Abu Abu', file:'lagu9.mp3'},
+  {judul:'iQro', file:'lagu10.mp3'}
+];
+
+/* =============================================================== */
+
+const $ = s => document.querySelector(s);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const W = 640, H = 480, KEY = 'fotobooth_galeri', KT = 'fb_total';
+const GRID_COLS = {2:1,3:1,4:2,5:2,6:2,7:3,8:2};
+
+const FRAMES = [
+ {n:'Wujud Admin Wok',cat:'JekPraw',bg:['#fff','#eee'],bd:'#fff',deco:'',tx:'#333',pat:'none',img:'jekbooth.jpg', over:'border1.png'},
+  {n:'Krinuzen',cat:'KriNus',bg:['#fff','#eee'],bd:'#fff',deco:'',tx:'#333',pat:'none',img:'back10.jpg', over:'border3.png'},
+  {n:'Draivistra',cat:'XXX',bg:['#fff','#eee'],bd:'#fff',deco:'',tx:'#333',pat:'none',img:'back11.jpg', over:'border4.png'},
+  {n:'Manglayang',cat:'Power',bg:['#fff','#eee'],bd:'#fff',deco:'',tx:'#333',pat:'none',img:'back7.jpg', over:'border5.png'},
+  {n:'Warga Krinuzen',cat:'Instagram',bg:['#fff','#eee'],bd:'#fff',deco:'',tx:'#333',pat:'none',img:'back13.jpg', over:'border2.png'},
+  {n:'InstaStory',cat:'Instagram',bg:['#fff','#eee'],bd:'#fff',deco:'',tx:'#333',pat:'none',img:'back13.jpg', over:'border6.png'},
+  {n:'Lamborghini',cat:'Racing',bg:['#fff','#eee'],bd:'#fff',deco:'',tx:'#333',pat:'none',img:'back20.jpg', over:'border12.png'},
+  {n:'Toy Story',cat:'Woody',bg:['#fff','#eee'],bd:'#fff',deco:'',tx:'#333',pat:'none',img:'back7.jpg', over:'border7.png'},
+  {n:'Daar El Qolam 2',cat:'DarQo',bg:['#fff','#eee'],bd:'#fff',deco:'',tx:'#333',pat:'none',img:'back2.jpg', over:'border8.png'},
+  {n:'Freya JKT48',cat:'Senyum Karamelku',bg:['#fff','#eee'],bd:'#fff',deco:'',tx:'#333',pat:'none',img:'back22.jpg', over:'border14.png'},
+  {n:'SION',cat:'NCT WISH',bg:['#fff','#eee'],bd:'#fff',deco:'',tx:'#333',pat:'none',img:'back7.jpg', over:'border9.png'},
+  {n:'Kim Namjoon',cat:'BTS',bg:['#fff','#eee'],bd:'#fff',deco:'',tx:'#333',pat:'none',img:'back21.jpg', over:'border13.png'},
+  {n:'Little Cow',cat:'Anak Sapi',bg:['#fff','#eee'],bd:'#fff',deco:'',tx:'#333',pat:'none',img:'back12.jpg', over:'border10.png'},
+  {n:'Daily News',cat:'Koran',bg:['#fff','#eee'],bd:'#fff',deco:'',tx:'#333',pat:'none',img:'back14.jpg', over:'border11.png'},
+ {n:'Pinky Boy',cat:'Bowtie bg',bg:['#ff9ad5','#ffd1ec'],bd:'#fff',deco:'',tx:'#c2185b',pat:'dots'},
+ {n:'Ocean Dream',cat:'Lautan Lepas sia',bg:['#4facfe','#00f2fe'],bd:'#fff',deco:'',tx:'#0d47a1',pat:'stripes'},
+ {n:'Sunset Beach',cat:'Indah Cuy',bg:['#ff9966','#ff5e62','#a044ff'],bd:'#fff',deco:'',tx:'#fff',pat:'none'},
+ {n:'Rasa Mint',cat:'Permen Mint',bg:['#a8ff78','#78ffd6'],bd:'#fff',deco:'',tx:'#1b5e20',pat:'dots'},
+ {n:'Mimpi Lavender',cat:'mimpi mulu, bangun',bg:['#c4b0ff','#f3e8ff'],bd:'#fff',deco:'',tx:'#4a148c',pat:'none'},
+ {n:'Bintang kegelapan',cat:'Still bre',bg:['#0f0c29','#302b63','#24243e'],bd:'#ffe27a',deco:'',tx:'#ffe27a',pat:'stars'},
+ {n:'Retro Film',cat:'Roll Kamera',bg:['#111','#333'],bd:'#fff',deco:'',tx:'#fff',pat:'film'},
+ {n:'Polaroid',cat:'Film',bg:['#f8f8f8','#e8e8e8'],bd:'#ddd',deco:'',tx:'#444',pat:'none',mat:'#fff'},
+ {n:'Musim Sakura',cat:'musiman',bg:['#ffd6e8','#ffb3d1'],bd:'#fff',deco:'',tx:'#ad1457',pat:'none'},
+ {n:'Emas Elite',cat:'emas ngambang',bg:['#f7d774','#b8860b'],bd:'#fff8dc',deco:'',tx:'#3e2a00',pat:'stripes'},
+ {n:'Galaxy',cat:'alam semesta',bg:['#1a0033','#3a0ca3','#7209b7'],bd:'#f72585',deco:'',tx:'#fff',pat:'stars'},
+ {n:'Permen Kawaii',cat:'imoet',bg:['#ffafcc','#bde0fe'],bd:'#fff',deco:'',tx:'#7b2cbf',pat:'check'},
+ {n:'Tropical',cat:'pemandangan',bg:['#00b09b','#96c93d'],bd:'#fff',deco:'',tx:'#fff',pat:'none'},
+ {n:'Winter Snow',cat:'musim dingin',bg:['#e0f7ff','#a1c4fd'],bd:'#fff',deco:'',tx:'#0d47a1',pat:'dots'},
+ {n:'Halloween',cat:'serem ih',bg:['#1a1a1a','#ff7518'],bd:'#ff7518',deco:'',tx:'#fff',pat:'none'},
+ {n:'Christmas',cat:'santa claus',bg:['#c62828','#2e7d32'],bd:'#fff',deco:'',tx:'#fff',pat:'stripes'},
+ {n:'Ulang Tahun',cat:'Ultah',bg:['#fff176','#ff80ab'],bd:'#fff',deco:'',tx:'#880e4f',pat:'confetti'},
+ {n:'Teddy Bear',cat:'imoet',bg:['#f5deb3','#d2a679'],bd:'#fff',deco:'',tx:'#5d4037',pat:'dots'},
+ {n:'Valentine',cat:'Seru jir',bg:['#ff5f6d','#ffc371'],bd:'#fff',deco:'',tx:'#fff',pat:'none'},
+ {n:'Neon Cyber',cat:'CyberPunk',bg:['#050510','#10102a'],bd:'#00ffd5',deco:'',tx:'#00ffd5',pat:'check',glow:1},
+ {n:'Pelangi',cat:'gay bg?',bg:['#ff9a9e','#fad0c4','#fbc2eb','#a6c1ee','#84fab0'],bd:'#fff',deco:'',tx:'#555',pat:'none'},
+ {n:'Vintage Paper',cat:'Klasik',bg:['#f4e4c1','#d9bf8c'],bd:'#5d4037',deco:'',tx:'#5d4037',pat:'dots'},
+ {n:'Astronaut',cat:'Alam Semesta',bg:['#000428','#004e92'],bd:'#fff',deco:'',tx:'#fff',pat:'stars'},
+ {n:'Cat Lover',cat:'imoet',bg:['#ffe0b2','#ffccbc'],bd:'#fff',deco:'',tx:'#bf360c',pat:'dots'}
+];
+const FILTERS = [
+ ['Normal','none'],['Hitam Putih','grayscale(1)'],['Sepia','sepia(.8)'],['Vivid','saturate(1.8) contrast(1.1)'],
+ ['Hijau','hue-rotate(90deg)'],['Biru','hue-rotate(200deg) saturate(1.5)'],['Kontras','contrast(1.4) brightness(1.1)'],
+ ['Dreamy','blur(1.5px) brightness(1.1) saturate(1.3)'],['Negatif','invert(1)'],['Hangat','sepia(.5) hue-rotate(-30deg) saturate(2)'],
+ ['Cerah','brightness(1.25) contrast(.9) saturate(1.2)'],['Noir','grayscale(1) contrast(1.5)'],
+ ['Pastel','brightness(1.1) saturate(.7) contrast(.9)'],['Vintage','sepia(.4) contrast(1.2) saturate(.8)'],
+ ['Cool','hue-rotate(180deg) saturate(1.2)'],['Fade','contrast(.8) brightness(1.2) saturate(.8)'],
+ ['Drama','contrast(1.6) saturate(1.3) brightness(.9)'],['Soft Glow','brightness(1.15) blur(.8px)'],
+ ['Pink Tone','sepia(.3) hue-rotate(-50deg) saturate(1.8)'],['Retro','sepia(.6) saturate(1.5) hue-rotate(-15deg)']
+];
+const FACES = [
+ {n:'Tanpa',items:[]},
+ {n:'👑 Mahkota',items:[{e:'👑',x:.5,y:-.12,s:.7}]},
+ {n:'🕶️ Kacamata',items:[{e:'🕶️',x:.5,y:.38,s:.95}]},
+ {n:'🐱 Kucing',items:[{e:'🐱',x:.08,y:-.05,s:.4},{e:'🐱',x:.92,y:-.05,s:.4}]},
+ {n:'🐻 Beruang',items:[{e:'🐻',x:.05,y:-.02,s:.4},{e:'🐻',x:.95,y:-.02,s:.4}]},
+ {n:'🐰 Kelinci',items:[{e:'🐰',x:.5,y:-.3,s:.8}]},
+ {n:'🤡 Badut',items:[{e:'🔴',x:.5,y:.62,s:.2},{e:'🎩',x:.5,y:-.15,s:.7}]},
+ {n:'💖 Hati',items:[{e:'💖',x:-.05,y:.1,s:.3},{e:'💖',x:1.05,y:.1,s:.3},{e:'💕',x:.1,y:-.1,s:.25},{e:'💕',x:.9,y:-.1,s:.25},{e:'💗',x:.5,y:-.2,s:.3}]},
+ {n:'🌸 Bunga',items:[.1,.3,.5,.7,.9].map(x=>({e:'🌸',x,y:-.05,s:.28}))},
+ {n:'🥳 Pesta',items:[{e:'🎉',x:.1,y:-.1,s:.4},{e:'🎊',x:.9,y:-.1,s:.4},{e:'🥳',x:.5,y:-.2,s:.35}]},
+ {n:'✨ Glitter',items:[{e:'✨',x:-.1,y:.3,s:.3},{e:'✨',x:1.1,y:.3,s:.3},{e:'⭐',x:.5,y:-.1,s:.3},{e:'✨',x:.9,y:.9,s:.25},{e:'✨',x:.1,y:.9,s:.25}]},
+ {n:'🎓 Wisuda',items:[{e:'🎓',x:.5,y:-.1,s:.8}]},
+ {n:'🌈 Pelangi',items:[{e:'🌈',x:.5,y:-.25,s:1}]},
+ {n:'⭐ Bintang',items:[0,.25,.5,.75,1].map((x,i)=>({e:'⭐',x,y:i%2?-.2:-.05,s:.25}))},
+ {n:'💭 Mikir',items:[{e:'💭',x:1.1,y:-.15,s:.5}]},
+ {n:'❄️ Salju',items:[{e:'❄️',x:-.05,y:0,s:.3},{e:'❄️',x:1.05,y:.2,s:.3},{e:'❄️',x:.5,y:-.2,s:.3},{e:'❄️',x:.1,y:.9,s:.25},{e:'❄️',x:.9,y:.95,s:.25}]},
+ {n:'🦋 Kupu',items:[{e:'🦋',x:-.1,y:.2,s:.4},{e:'🦋',x:1.1,y:.5,s:.35},{e:'🦋',x:.8,y:-.2,s:.3}]}
+];
+const EMO = {
+ Wajah:'😍 😂 🥰 😎 🤩 😜 🥳 😇 🤪 😘 🙈 😭 🤭 😏 🥺 🤗 😴 🤯'.split(' '),
+ Hati:'💖 💕 💗 💘 ❤️ 🧡 💛 💚 💙 💜 🤍 💋 💌 💞 💝'.split(' '),
+ Alam:'🌸 🌺 🌻 🌹 🍀 🌈 ☁️ 🌙 ⭐ 🌟 ✨ 🔥 ❄️ 🌊 🍁 🌴'.split(' '),
+ Hewan:'🐱 🐶 🐰 🦄 🐼 🐻 🦊 🐸 🐥 🦋 🐝 🐧 🐨 🦁 🐙 🐳'.split(' '),
+ Makanan:'🍓 🍭 🍦 🍩 🍰 🧋 🍕 🍔 🍟 🍉 🍒 🍫 ☕ 🍪 🍑 🍿'.split(' '),
+ Pesta:'🎉 🎊 🎈 🎀 🎁 🎂 👑 💎 🎶 🎵 🎤 🪩 🏆 📸 🎧 🕶️'.split(' ')
+};
+const POSES = ['✌️ Peace dua jari','🤪 Wajah konyol','😎 Gaya keren pakai kacamata','🫶 Bentuk hati dengan tangan','🤫 Jari di bibir (ssst)','🙈 Tutup mata','🤔 Pose mikir','💪 Pamer otot','🥰 Peluk diri sendiri','🤳 Pura-pura selfie','👑 Gaya raja/ratu','🐱 Tangan jadi cakar kucing','😱 Kaget lebay','🕺 Gaya menari','🙏 Tangan berdoa','🤞 Jari silang','😘 Kirim ciuman','🥶 Pura-pura kedinginan','🤩 Mata berbinar','👆 Tunjuk ke atas','🧍 Berdiri tegak serius','🤗 Rentangkan tangan','🦖 Gaya dinosaurus','🤝 Salaman dengan teman','😴 Pura-pura tidur','📞 Tangan jadi telepon','🧙 Gaya penyihir','🥷 Gaya ninja','😂 Tertawa lepas','🫰 Jari hati ala Korea'];
+const THEMES = [
+ ['Pink Dream','#ff6fb5','#9b6bff','#fff0f7','#f3e8ff','#e0f4ff'],
+ ['Ocean','#4facfe','#00c6ff','#e0f4ff','#d0ecff','#e6fbff'],
+ ['Sunset','#ff9966','#ff5e62','#fff3e0','#ffe0e0','#fff8e1'],
+ ['Mint','#43e97b','#00c9a7','#e8fff3','#d6fff0','#f0ffe0'],
+ ['Lavender','#b388ff','#f06292','#f3e5f5','#ede7f6','#fce4ec']
+];
+const state = {grid:4,frame:0,filter:0,face:0,emoji:'😍',timer:3,mirror:true,facing:'user',br:100,ct:100,sat:100,size:70,
+  caption:'',showDate:true,sound:true,auto:false,custom:false,c1:'#ff9ad5',c2:'#ffd1ec',fx:true};
+let stream=null,loop=0,busy=false,photos=[],result=null,faces=[],stickers=[],dragIdx=-1;
+let crop={x:0,y:0,sw:W,sh:H},faceReady=false,faceTried=false,faceBusy=false,themeIdx=0;
+
+/* ================== ROUTER ================== */
+function route(){
+  const h=(location.hash||'#beranda').slice(1);
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===h));
+  document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+h));
+  if(h!=='fotobooth') stopCam();
+  if(h==='galeri') renderGallery();
+  if(h==='beranda') renderStats();
+  if(h==='musik') renderPlaylist();
+  window.scrollTo(0,0);
+}
+addEventListener('hashchange',route);
+
+/* ================== FRAME (gambar strip) ================== */
+function rr(x,px,py,w,h,r){x.beginPath(); x.roundRect?x.roundRect(px,py,w,h,r):x.rect(px,py,w,h);}
+function pattern(x,fr,WW,HH,cw,pad,rnd){
+  x.save();
+  if(fr.pat==='dots'){x.fillStyle='rgba(255,255,255,.28)';const s=cw*.11;for(let i=0;i<WW;i+=s)for(let j=0;j<HH;j+=s){x.beginPath();x.arc(i+s/2,j+s/2,s*.16,0,7);x.fill()}}
+  if(fr.pat==='stripes'){x.strokeStyle='rgba(255,255,255,.18)';x.lineWidth=cw*.04;const s=cw*.1;for(let i=-HH;i<WW;i+=s){x.beginPath();x.moveTo(i,0);x.lineTo(i+HH,HH);x.stroke()}}
+  if(fr.pat==='check'){x.fillStyle='rgba(255,255,255,.14)';const s=cw*.09;for(let i=0;i*s<WW;i++)for(let j=0;j*s<HH;j++)if((i+j)%2)x.fillRect(i*s,j*s,s,s)}
+  if(fr.pat==='film'){x.fillStyle='rgba(255,255,255,.85)';const s=cw*.05;for(let i=s;i<WW-s;i+=s*2){x.fillRect(i,pad*.3,s,pad*.4);x.fillRect(i,HH-pad*.7,s,pad*.4)}}
+  if(fr.pat==='stars'){x.fillStyle='rgba(255,255,255,.8)';x.textAlign='center';x.textBaseline='middle';for(let i=0;i<70;i++){x.font=`${cw*(.02+rnd()*.04)}px serif`;x.fillText('✦',rnd()*WW,rnd()*HH)}}
+  if(fr.pat==='confetti'){const cs=['#ff4081','#40c4ff','#ffeb3b','#69f0ae','#b388ff'];for(let i=0;i<90;i++){x.save();x.translate(rnd()*WW,rnd()*HH);x.rotate(rnd()*6);x.fillStyle=cs[i%5];x.fillRect(0,0,cw*.03,cw*.015);x.restore()}}
+  x.restore();
+}
+  const IMGS={};
+function drawCover(x,im,dx,dy,dw,dh){const r=Math.max(dw/im.width,dh/im.height),w=im.width*r,h=im.height*r;x.drawImage(im,dx+(dw-w)/2,dy+(dh-h)/2,w,h)}
+function buildStrip(list,fr,N,cw=400,ch=300,caption='',showDate=true){
+  const cols=GRID_COLS[N],rows=Math.ceil(N/cols),pad=cw*.08,gap=cw*.05,foot=cw*.25;
+  const WW=pad*2+cols*cw+(cols-1)*gap,HH=pad*2+rows*ch+(rows-1)*gap+foot;
+  const c=document.createElement('canvas'); c.width=WW; c.height=HH;
+  const x=c.getContext('2d');
+  const g=x.createLinearGradient(0,0,WW,HH);
+  fr.bg.forEach((col,i)=>g.addColorStop(fr.bg.length>1?i/(fr.bg.length-1):0,col));
+  x.fillStyle=g; x.fillRect(0,0,WW,HH);
+  let s=7; const rnd=()=>(s=(s*9301+49297)%233280)/233280;
+    if(fr.img&&IMGS[fr.img]) drawCover(x,IMGS[fr.img],0,0,WW,HH);
+  else{
+    pattern(x,fr,WW,HH,cw,pad,rnd);
+    x.font=`${cw*.1}px serif`; x.textAlign='center'; x.textBaseline='middle'; x.globalAlpha=.6;
+    for(let i=0;i<40;i++) x.fillText(fr.deco,rnd()*WW,rnd()*HH);
+    x.globalAlpha=1;
+  }
+  for(let i=0;i<rows*cols;i++){
+    const px=pad+(i%cols)*(cw+gap),py=pad+Math.floor(i/cols)*(ch+gap);
+    if(fr.mat&&i<N){const m=cw*.035;x.save();x.shadowColor='rgba(0,0,0,.3)';x.shadowBlur=cw*.03;x.fillStyle=fr.mat;rr(x,px-m,py-m,cw+2*m,ch+2*m,cw*.01);x.fill();x.restore()}
+    x.save(); rr(x,px,py,cw,ch,cw*.03); x.clip();
+    if(i<N&&list&&list[i]) x.drawImage(list[i],px,py,cw,ch);
+    else{x.fillStyle='rgba(255,255,255,.35)';x.fillRect(px,py,cw,ch);
+      x.font=`${ch*.4}px serif`;x.textAlign='center';x.textBaseline='middle';x.fillStyle='#000';x.fillText(i<N?'📷':fr.deco,px+cw/2,py+ch/2)}
+    x.restore();
+    if(i<N){x.save();if(fr.glow){x.shadowColor=fr.bd;x.shadowBlur=cw*.05}
+      rr(x,px,py,cw,ch,cw*.03);x.lineWidth=cw*.025;x.strokeStyle=fr.bd;x.stroke();x.restore()}
+  }
+  const label=(caption||fr.n)+(showDate?' • '+new Date().toLocaleDateString('id-ID'):'');
+  x.fillStyle=fr.tx; x.font=`bold ${cw*.07}px sans-serif`; x.textAlign='center'; x.textBaseline='middle';
+  x.fillText(`${fr.deco} ${label} ${fr.deco}`,WW/2,HH-foot/2,WW*.92);
+    if(fr.over&&IMGS[fr.over]) x.drawImage(IMGS[fr.over],0,0,WW,HH);
+  return c;
+}
+function curFrame(){const f=FRAMES[state.frame];return state.custom?{...f,bg:[state.c1,state.c2]}:f}
+function updatePreview(){const p=$('#preview');p.innerHTML='';p.appendChild(buildStrip(null,curFrame(),state.grid,120,90,state.caption,state.showDate))}
+
+/* ================== KAMERA & RENDER ================== */
+const stage=$('#stage'),sx=stage.getContext('2d'),vid=$('#vid');
+const isMir=()=>state.mirror&&state.facing==='user';
+function filterStr(){
+  const base=FILTERS[state.filter][1],adj=`brightness(${state.br}%) contrast(${state.ct}%) saturate(${state.sat}%)`;
+  return base==='none'?adj:base+' '+adj;
+}
+async function startCam(){
+  if(stream) return;
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:state.facing,width:{ideal:1280},height:{ideal:720}},audio:false});
+    vid.srcObject=stream; await vid.play();
+    $('#camMsg').hidden=true; $('#btnShoot').disabled=false; initFace(); render();
+  }catch(e){
+    stream=null; $('#camMsg').hidden=false;
+    $('#camMsg').textContent='Kamera tidak bisa diakses. Izinkan akses kamera dan buka website lewat https:// atau localhost.';
+  }
+}
+function stopCam(){
+  cancelAnimationFrame(loop);
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  stream=null; $('#btnShoot').disabled=true; $('#camMsg').hidden=false;
+  $('#camMsg').textContent='Tekan “Nyalakan Kamera” untuk mulai 📷';
+}
+  const HAS_CF='filter' in CanvasRenderingContext2D.prototype;
+function applyFilterPx(ctx,str){
+  const fs=[...str.matchAll(/([a-z-]+)\(([-\d.]+)(%|deg|px)?\)/g)]
+    .map(m=>({n:m[1],v:m[3]==='%'?m[2]/100:+m[2]}))
+    .filter(f=>f.n!=='blur'&&!(['brightness','contrast','saturate'].includes(f.n)&&f.v===1));
+  if(!fs.length) return;
+  const img=ctx.getImageData(0,0,W,H),d=img.data,cl=v=>v<0?0:v>255?255:v;
+  for(let i=0;i<d.length;i+=4){
+    let r=d[i],g=d[i+1],b=d[i+2];
+    for(const f of fs){
+      const v=f.v,y=.2126*r+.7152*g+.0722*b;
+      if(f.n==='brightness'){r*=v;g*=v;b*=v}
+      else if(f.n==='contrast'){r=(r-128)*v+128;g=(g-128)*v+128;b=(b-128)*v+128}
+      else if(f.n==='saturate'){r=y+(r-y)*v;g=y+(g-y)*v;b=y+(b-y)*v}
+      else if(f.n==='grayscale'){r+=(y-r)*v;g+=(y-g)*v;b+=(y-b)*v}
+      else if(f.n==='invert'){r+=(255-2*r)*v;g+=(255-2*g)*v;b+=(255-2*b)*v}
+      else if(f.n==='sepia'){const R=.393*r+.769*g+.189*b,G=.349*r+.686*g+.168*b,B=.272*r+.534*g+.131*b;r+=(R-r)*v;g+=(G-g)*v;b+=(B-b)*v}
+      else if(f.n==='hue-rotate'){const a=v*Math.PI/180,c=Math.cos(a),s=Math.sin(a);
+        const R=r*(.213+c*.787-s*.213)+g*(.715-c*.715-s*.715)+b*(.072-c*.072+s*.928);
+        const G=r*(.213-c*.213+s*.143)+g*(.715+c*.285+s*.140)+b*(.072-c*.072-s*.283);
+        const B=r*(.213-c*.213-s*.787)+g*(.715-c*.715+s*.715)+b*(.072+c*.928+s*.072);
+        r=R;g=G;b=B}
+      r=cl(r);g=cl(g);b=cl(b);
+    }
+    d[i]=r;d[i+1]=g;d[i+2]=b;
+  }
+  ctx.putImageData(img,0,0);
+  }
+function render(){
+  if(!stream) return;
+  const vw=vid.videoWidth,vh=vid.videoHeight;
+  if(vw){
+    if(vw/vh>W/H){crop.sh=vh;crop.sw=vh*W/H;crop.x=(vw-crop.sw)/2;crop.y=0}
+    else{crop.sw=vw;crop.sh=vw*H/W;crop.x=0;crop.y=(vh-crop.sh)/2}
+    sx.save();
+if(isMir()){sx.translate(W,0);sx.scale(-1,1)}
+if(HAS_CF) sx.filter=filterStr();
+sx.drawImage(vid,crop.x,crop.y,crop.sw,crop.sh,0,0,W,H);
+sx.restore();
+if(!HAS_CF) applyFilterPx(sx,filterStr());
+    drawFace(); drawStickers();
+    if(state.face>0) detect();
+  }
+  loop=requestAnimationFrame(render);
+}
+function emo(e,x,y,s){sx.font=`${s}px serif`;sx.textAlign='center';sx.textBaseline='middle';sx.fillText(e,x,y)}
+function drawFace(){
+  if(!state.face) return;
+  faces.forEach(f=>FACES[state.face].items.forEach(it=>emo(it.e,f.x+it.x*f.w,f.y+it.y*f.h,it.s*f.w)));
+}
+function drawStickers(){
+  stickers.forEach(s=>{
+    if(s.t){sx.font=`bold ${s.size*.6}px sans-serif`;sx.textAlign='center';sx.textBaseline='middle';
+      sx.lineWidth=6;sx.strokeStyle='rgba(0,0,0,.7)';sx.strokeText(s.t,s.x,s.y);sx.fillStyle='#fff';sx.fillText(s.t,s.x,s.y)}
+    else emo(s.e,s.x,s.y,s.size);
+  });
+}
+
+/* ================== DETEKSI WAJAH ================== */
+const FA='https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12';
+function initFace(){
+  if(window.faceapi){ if(!faceReady) loadModel(); return; }
+  if(faceTried) return; faceTried=true;
+  const s=document.createElement('script'); s.src=FA+'/dist/face-api.js'; s.onload=loadModel;
+  document.head.appendChild(s);
+}
+async function loadModel(){try{await faceapi.nets.tinyFaceDetector.loadFromUri(FA+'/model/');faceReady=true}catch(e){}}
+let lastDet=0;
+async function detect(){
+  if(faceBusy||Date.now()-lastDet<150) return;
+  lastDet=Date.now(); faceBusy=true;
+  try{
+    if(faceReady){
+      const d=await faceapi.detectAllFaces(vid,new faceapi.TinyFaceDetectorOptions({inputSize:224,scoreThreshold:.4}));
+      faces=d.map(f=>{const b=f.box,w=b.width*W/crop.sw,h=b.height*H/crop.sh,bx=(b.x-crop.x)*W/crop.sw;
+        return {x:isMir()?W-(bx+w):bx,y:(b.y-crop.y)*H/crop.sh,w,h}});
+    } else faces=[{x:W*.3,y:H*.2,w:W*.4,h:H*.55}];
+  }catch(e){}
+  faceBusy=false;
+  }
+
+/* ================== STIKER ================== */
+function pos(ev){const r=stage.getBoundingClientRect();return{x:(ev.clientX-r.left)*W/r.width,y:(ev.clientY-r.top)*H/r.height}}
+stage.onpointerdown=ev=>{
+  const p=pos(ev); dragIdx=-1;
+  for(let i=stickers.length-1;i>=0;i--) if(Math.hypot(stickers[i].x-p.x,stickers[i].y-p.y)<Math.max(30,stickers[i].size/2)){dragIdx=i;break}
+  if(dragIdx<0){stickers.push({e:state.emoji,x:p.x,y:p.y,size:state.size});dragIdx=stickers.length-1}
+  stage.setPointerCapture(ev.pointerId);
+};
+stage.onpointermove=ev=>{if(dragIdx>=0){const p=pos(ev);stickers[dragIdx].x=p.x;stickers[dragIdx].y=p.y}};
+stage.onpointerup=()=>dragIdx=-1;
+$('#btnClear').onclick=()=>stickers=[];
+$('#btnUndo').onclick=()=>stickers.pop();
+$('#btnTxt').onclick=()=>{const t=$('#txtSticker').value.trim();if(!t)return;stickers.push({t,x:W/2,y:H/2,size:state.size});$('#txtSticker').value=''};
+
+/* ================== SUARA ================== */
+let ac;
+function beep(f=880,d=.12,type='sine'){
+  if(!state.sound) return;
+  try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();
+      if(ac.state==='suspended') ac.resume();
+    const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;g.gain.value=.15;
+    o.connect(g);g.connect(ac.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.stop(ac.currentTime+d)}catch(e){}
+}
+const shutter=()=>{beep(1400,.05,'square');setTimeout(()=>beep(600,.12,'square'),60)};
+
+/* ================== AMBIL FOTO ================== */
+function flash(){if(!state.fx)return;const f=document.createElement('div');f.className='flash';document.body.appendChild(f);setTimeout(()=>f.remove(),450)}
+async function shoot(){
+  if(busy||!stream) return; busy=true; $('#btnShoot').disabled=true; photos=[];
+  const N=state.grid;
+  for(let i=0;i<N;i++){
+    $('#prog').textContent=`Foto ${i+1} dari ${N} — bersiap! 😄`;
+    $('#count').hidden=false;
+    for(let t=state.timer;t>0;t--){$('#count').textContent=t;beep(660,.1);await sleep(1000)}
+    $('#count').hidden=true; flash(); shutter();
+    const c=document.createElement('canvas'); c.width=W; c.height=H;
+    c.getContext('2d').drawImage(stage,0,0); photos.push(c);
+    await sleep(500);
+  }
+  try{localStorage.setItem(KT,(+localStorage.getItem(KT)||0)+N)}catch(e){}
+  $('#prog').innerHTML='&nbsp;'; busy=false; $('#btnShoot').disabled=false;
+  result=buildStrip(photos,curFrame(),N,400,300,state.caption,state.showDate);
+  $('#result').innerHTML=''; $('#result').appendChild(result);
+  $('#modal').hidden=false; confetti();
+  if(state.auto) saveToGallery(false);
+}
+
+/* ================== SIMPAN / UNDUH / BAGIKAN ================== */
+function download(canvas,name){const a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download=name;a.click()}
+$('#btnDl').onclick=()=>download(result,'fotobooth-'+Date.now()+'.png');
+$('#btnShare').onclick=()=>result.toBlob(b=>{
+  const f=new File([b],'fotobooth.png',{type:'image/png'});
+  if(navigator.canShare&&navigator.canShare({files:[f]})) navigator.share({files:[f],title:'Photobooth'}).catch(()=>{});
+  else download(result,'fotobooth-'+Date.now()+'.png');
+});
+function getGal(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}}
+function saveToGallery(msg=true){
+  const sc=Math.min(1,800/result.width),t=document.createElement('canvas');
+  t.width=result.width*sc;t.height=result.height*sc;t.getContext('2d').drawImage(result,0,0,t.width,t.height);
+  const list=getGal();list.unshift({id:Date.now(),d:t.toDataURL('image/jpeg',.85)});
+  try{localStorage.setItem(KEY,JSON.stringify(list));if(msg)toast('Tersimpan di Galeri ✅')}
+  catch(e){toast('Penyimpanan penuh, hapus foto lama di Galeri')}
+}
+$('#btnSave').onclick=()=>saveToGallery();
+$('#btnClose').onclick=()=>$('#modal').hidden=true;
+
+function renderGallery(){
+  const list=getGal(),box=$('#galList');box.innerHTML='';
+  $('#emptyGal').hidden=list.length>0;$('#gCount').textContent=list.length;
+  list.forEach(it=>{
+    const d=document.createElement('div');d.className='item';
+    d.innerHTML=`<img src="${it.d}"><p><small>${new Date(it.id).toLocaleString('id-ID')}</small></p><button class="btn sm">⬇️</button><button class="btn sm">🗑️</button>`;
+    d.querySelector('img').onclick=()=>{$('#lbImg').src=it.d;$('#lightbox').hidden=false};
+    const [b1,b2]=d.querySelectorAll('button');
+    b1.onclick=()=>{const a=document.createElement('a');a.href=it.d;a.download='fotobooth-'+it.id+'.jpg';a.click()};
+    b2.onclick=()=>{localStorage.setItem(KEY,JSON.stringify(getGal().filter(x=>x.id!==it.id)));renderGallery()};
+    box.appendChild(d);
+  });
+}
+$('#lbClose').onclick=()=>$('#lightbox').hidden=true;
+$('#btnDelAll').onclick=()=>{if(confirm('Hapus semua foto di galeri?')){localStorage.removeItem(KEY);renderGallery()}};
+$('#btnDlAll').onclick=async()=>{for(const it of getGal()){const a=document.createElement('a');a.href=it.d;a.download='fotobooth-'+it.id+'.jpg';a.click();await sleep(400)}};
+function renderStats(){
+  $('#sTotal').textContent=+localStorage.getItem(KT)||0;$('#sGal').textContent=getGal().length;
+  $('#sFrame').textContent=FRAMES.length;$('#sFilter').textContent=FILTERS.length;
+}
+
+/* ================== UI ================== */
+function chips(sel,items,get,set,cls=''){
+  const box=$(sel);box.innerHTML='';
+  const refresh=()=>[...box.children].forEach((b,i)=>b.classList.toggle('on',get(i,items[i])));
+  items.forEach((it,i)=>{
+    const b=document.createElement('button');b.className='chip '+cls;b.textContent=it;
+    b.onclick=()=>{set(i,it);refresh()};box.appendChild(b);
+  });
+  refresh();
+}
+document.querySelectorAll('#tabs .chip').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#tabs .chip').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.tabpane').forEach(p=>p.hidden=p.id!==b.dataset.t);
+});
+chips('#cGrid',[2,3,4,5,6,7,8].map(n=>n+' foto'),i=>state.grid===i+2,i=>{state.grid=i+2;updatePreview()});
+chips('#cFilter',FILTERS.map(f=>f[0]),i=>state.filter===i,i=>state.filter=i);
+chips('#cFace',FACES.map(f=>f.n),i=>state.face===i,i=>{state.face=i;faces=[]});
+let emoCat='Wajah';
+function renderEmoji(){chips('#cEmoji',EMO[emoCat],(i,e)=>state.emoji===e,(i,e)=>state.emoji=e,'em')}
+chips('#cEmoCat',Object.keys(EMO),(i,c)=>c===emoCat,(i,c)=>{emoCat=c;renderEmoji()});
+renderEmoji();
+
+let pickCat='Semua';
+const thumbs=FRAMES.map(f=>buildStrip(null,f,4,90,68,'',false));
+function pickFrame(i){
+  state.frame=i; updatePreview(); renderPicker();
+  $('#frameName').textContent=FRAMES[i].deco+' '+FRAMES[i].n;
+}
+function renderPicker(){
+  const box=$('#framePicker'); box.innerHTML='';
+  FRAMES.forEach((f,i)=>{
+    if(pickCat!=='Semua'&&f.cat!==pickCat) return;
+    const d=document.createElement('div');
+    d.className='fcard'+(i===state.frame?' sel':'');
+    const n=document.createElement('b'); n.textContent=f.deco+' '+f.n;
+    const c=document.createElement('small'); c.textContent=f.cat;
+    d.append(thumbs[i],n,c);
+    d.onclick=()=>{pickFrame(i);toast('Frame dipilih: '+f.n);location.hash='#fotobooth'};
+    box.appendChild(d);
+  });
+  const s=box.querySelector('.sel');
+  if(s) box.scrollLeft=s.offsetLeft-box.clientWidth/2+s.clientWidth/2;
+}
+chips('#cPickCat',['Semua'],(i,c)=>c===pickCat,(i,c)=>{pickCat=c;renderPicker()});
+$('#selTimer').onchange=e=>state.timer=+e.target.value;
+$('#chkCustom').onchange=e=>{state.custom=e.target.checked;updatePreview()};
+$('#col1').oninput=e=>{state.c1=e.target.value;updatePreview()};
+$('#col2').oninput=e=>{state.c2=e.target.value;updatePreview()};
+$('#caption').oninput=e=>{state.caption=e.target.value;updatePreview()};
+$('#chkDate').onchange=e=>{state.showDate=e.target.checked;updatePreview()};
+$('#chkMirror').onchange=e=>state.mirror=e.target.checked;
+$('#chkSound').onchange=e=>state.sound=e.target.checked;
+$('#chkAuto').onchange=e=>state.auto=e.target.checked;
+[['rBr','br','vBr'],['rCt','ct','vCt'],['rSat','sat','vSat'],['rSize','size','vSize']].forEach(([id,k,v])=>{
+  $('#'+id).oninput=e=>{state[k]=+e.target.value;$('#'+v).textContent=e.target.value}});
+$('#btnResetAdj').onclick=()=>{[['rBr','br','vBr'],['rCt','ct','vCt'],['rSat','sat','vSat']].forEach(([id,k,v])=>{state[k]=100;$('#'+id).value=100;$('#'+v).textContent=100})};
+
+// katalog frame
+let frameCat='Semua';
+function renderFrames(){
+  const box=$('#frameList');box.innerHTML='';
+  FRAMES.forEach((f,i)=>{
+    if(frameCat!=='Semua'&&f.cat!==frameCat) return;
+    const d=document.createElement('div');d.className='item';
+    d.appendChild(buildStrip(null,f,4,120,90,'',false));
+    d.insertAdjacentHTML('beforeend',`<p>${f.deco} <b>${f.n}</b><br><small>${f.cat}</small></p>`);
+    d.onclick=()=>{state.frame=i;sf.value=i;updatePreview();toast('Frame dipilih: '+f.n);location.hash='#fotobooth'};
+    box.appendChild(d);
+  });
+}
+chips('#cPickCat',['Semua'],(i,c)=>c===pickCat,(i,c)=>{pickCat=c;renderPicker()});
+$('#fCount').textContent=FRAMES.length;
+renderFrames(); updatePreview(); pickFrame(0);
+  function preloadFrameImgs(){
+  FRAMES.forEach((f,i)=>[f.img,f.over].forEach(src=>{
+    if(!src) return;
+    const im=new Image();
+    im.onload=()=>{
+      IMGS[src]=im;
+      if(typeof thumbs!=='undefined') thumbs[i]=buildStrip(null,f,4,90,68,'',false);
+      renderFrames();
+      if(typeof renderPicker==='function') renderPicker();
+      updatePreview();
+    };
+    im.src=src;
+  }));
+}
+preloadFrameImgs();
+$('#btnCam').onclick=startCam;
+$('#btnShoot').onclick=shoot;
+$('#btnSwitch').onclick=async()=>{state.facing=state.facing==='user'?'environment':'user';stopCam();await startCam()};
+$('#btnFull').onclick=()=>{const b=$('#sbox');document.fullscreenElement?document.exitFullscreen():b.requestFullscreen?.()};
+
+/* ================== IDE POSE ================== */
+$('#btnPose').onclick=()=>{
+  const p=POSES[Math.floor(Math.random()*POSES.length)],[e,...t]=p.split(' ');
+  $('#pose').innerHTML=`<span>${e}</span>${t.join(' ')}`;confetti();
+};
+$('#btnChal').onclick=()=>{
+  const l=[...POSES].sort(()=>Math.random()-.5).slice(0,5);
+  $('#challenge').innerHTML=l.map(p=>`<li>${p}</li>`).join('');
+};
+
+/* ================== WHATSAPP ================== */
+$('#wa').href=`https://wa.me/${NOMOR_WA}?text=${encodeURIComponent('Halo Jekpraw, gue mau tanya tentang Fotobooth 📸')}`;
+$('#btnWA').onclick=()=>{
+  const t=`Halo, saya ${$('#wName').value||'pengunjung'}.\nKeperluan: ${$('#wTopic').value}\nPenilaian: ${$('#wRate').value}\n${$('#wMsg').value}`;
+  window.open(`https://wa.me/${NOMOR_WA}?text=${encodeURIComponent(t)}`,'_blank');
+};
+
+/* ================== MUSIK ================== */
+const au=new Audio();au.volume=.6;let list=[...LAGU],idx=0,shuf=false,loop1=false;
+const fmt=s=>isFinite(s)?Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0'):'0:00';
+function loadSong(i){
+  if(!list.length) return;
+  idx=(i+list.length)%list.length;au.src=list[idx].file;
+  $('#songName').textContent='🎵 '+list[idx].judul;$('#nowTitle').textContent=list[idx].judul;renderPlaylist();
+}
+function playSong(){au.play().catch(()=>toast('File lagu tidak ditemukan di folder musik'))}
+function nextSong(){loadSong(shuf?Math.floor(Math.random()*list.length):idx+1);playSong()}
+function renderPlaylist(){
+  const ul=$('#plist');ul.innerHTML='';
+  list.forEach((s,i)=>{
+    const li=document.createElement('li');li.className='song'+(i===idx?' on':'');
+    const a=document.createElement('span'),b=document.createElement('b');
+    a.textContent=i===idx?'▶':i+1;b.textContent=s.judul;li.append(a,b);
+    li.onclick=()=>{loadSong(i);playSong()};ul.appendChild(li);
+  });
+}
+const toggle=()=>au.paused?playSong():au.pause();
+au.onplay=()=>{$('#pPlay').textContent=$('#mPlay').textContent='⏸️';$('#eq').classList.add('play')};
+au.onpause=()=>{$('#pPlay').textContent=$('#mPlay').textContent='▶️';$('#eq').classList.remove('play')};
+au.onended=()=>{if(loop1){au.currentTime=0;playSong()}else nextSong()};
+au.ontimeupdate=()=>{$('#seek').value=au.duration?au.currentTime/au.duration*100:0;$('#tCur').textContent=fmt(au.currentTime);$('#tDur').textContent=fmt(au.duration)};
+$('#seek').oninput=e=>{if(au.duration)au.currentTime=e.target.value/100*au.duration};
+$('#pPlay').onclick=$('#mPlay').onclick=toggle;
+$('#pNext').onclick=$('#mNext').onclick=nextSong;
+$('#pPrev').onclick=$('#mPrev').onclick=()=>{loadSong(idx-1);playSong()};
+$('#mShuf').onclick=e=>{shuf=!shuf;e.target.classList.toggle('on',shuf)};
+$('#mLoop').onclick=e=>{loop1=!loop1;e.target.classList.toggle('on',loop1)};
+$('#vol').oninput=e=>au.volume=e.target.value;
+
+/* ================== TEMA & EFEK ================== */
+function setTheme(i){
+  themeIdx=i;const t=THEMES[i],s=document.body.style;
+  ['--p1','--p2','--b1','--b2','--b3'].forEach((k,j)=>s.setProperty(k,t[j+1]));
+  localStorage.setItem('fb_theme',i);
+}
+$('#btnTheme').onclick=()=>{setTheme((themeIdx+1)%THEMES.length);toast('Tema: '+THEMES[themeIdx][0])};
+$('#btnFx').onclick=()=>{state.fx=!state.fx;document.body.classList.toggle('nofx',!state.fx);toast(state.fx?'Efek aktif ✨':'Efek dimatikan')};
+setTheme(+localStorage.getItem('fb_theme')||0);
+
+const fxLayer=document.createElement('div');fxLayer.id='fxLayer';document.body.appendChild(fxLayer);
+const topLayer=document.createElement('div');topLayer.id='topLayer';document.body.appendChild(topLayer);
+for(let i=0;i<16;i++){
+  const s=document.createElement('span');s.className='float';s.textContent=['💖','✨','🌸','⭐','🎀','🫧'][i%6];
+  s.style.cssText=`left:${Math.random()*92}vw;animation-duration:${8+Math.random()*10}s;animation-delay:${-Math.random()*15}s;font-size:${16+Math.random()*22}px`;
+  fxLayer.appendChild(s);
+}
+function spark(x,y,em='✨'){
+  if(!state.fx) return;
+  const s=document.createElement('span');s.className='spark';s.textContent=em;s.style.left=x+'px';s.style.top=y+'px';
+  s.style.setProperty('--dx',(Math.random()*120-60)+'px');s.style.setProperty('--dy',(Math.random()*-120-20)+'px');
+  topLayer.appendChild(s);setTimeout(()=>s.remove(),900);
+}
+addEventListener('pointerdown',e=>{for(let i=0;i<6;i++)spark(e.clientX,e.clientY)});
+let lastTrail=0;
+addEventListener('pointermove',e=>{if(e.pointerType==='mouse'&&Date.now()-lastTrail>80){lastTrail=Date.now();spark(e.clientX,e.clientY,'💖')}});
+function confetti(){
+  if(!state.fx) return;
+  for(let i=0;i<50;i++){
+    const s=document.createElement('span');s.className='conf';s.textContent=['🎉','✨','💖','🎊','⭐'][i%5];
+    s.style.left=Math.random()*100+'vw';s.style.fontSize=(18+Math.random()*20)+'px';
+    s.style.animationDuration=(2+Math.random()*2)+'s';s.style.animationDelay=Math.random()+'s';
+    topLayer.appendChild(s);setTimeout(()=>s.remove(),5000);
+  }
+}
+function toast(m){
+  document.querySelector('#toast')?.remove();
+  const t=document.createElement('div');t.id='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);
+}
+// muncul halus saat scroll
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('show')}),{threshold:.1});
+document.querySelectorAll('.rev').forEach(el=>io.observe(el));
+// testimoni berputar
+let ti=0;const tEl=$('#testi');
+function showTesti(){tEl.style.opacity=0;setTimeout(()=>{tEl.textContent=TESTIMONI[ti++%TESTIMONI.length];tEl.style.opacity=1},500)}
+showTesti();setInterval(showTesti,4500);
+// layar pembuka
+setTimeout(()=>{$('#splash').style.opacity=0;setTimeout(()=>$('#splash').remove(),800)},1300);
+if(!document.documentElement.requestFullscreen) $('#btnFull').hidden=true;
+if(/iPhone|iPad|iPod/.test(navigator.userAgent)){$('#vol').hidden=true;$('#vol').previousElementSibling.hidden=true}
+  /* ================== FOTO BERANDA ================== */
+$('#heroPhoto').style.backgroundImage=`url("${FOTO_SAYA}")`;
+  addEventListener('scroll',()=>$('nav').classList.toggle('solid',scrollY>60),{passive:true});
+route();
+</script>
+<script data-goatcounter="https://jekkbooth.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
